@@ -1,3 +1,5 @@
+import os.path
+
 import cv2
 import random
 import numpy as np
@@ -36,23 +38,37 @@ def update_centroids(img, labels, centroids):
 
 # read image
 img = cv2.imread('./airplane.png')
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+# img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 # 클러스터 중심 개수 지정 및 생성
 num_centroid = 5
 centroids = [get_center(img.shape[0], img.shape[1]) for _ in range(num_centroid)]
-labels = np.zeros((316, 316))
+labels = np.zeros((316, 316)).astype(np.uint8)
 
-# update
-iter = 10
-for _ in range(iter):
+# save
+save_dir = './result_k_means'
+os.makedirs(save_dir, exist_ok=True)
+
+# visualize
+colors = np.array([[255, 255, 255], [0, 0, 255], [0, 255, 0], [255, 0, 0], [255, 255, 0]]).astype(np.uint8)
+vis = colors[labels]
+save_path = os.path.join(save_dir, f'initial_labels.png')  # save initial labels
+cv2.imwrite(save_path, vis)
+cv2.imwrite(os.path.join(save_dir, 'origin_image.png'), img)  # save original image
+
+# # update
+iter = 30
+for i in range(iter):
     # update labels
     update_label(img, labels, centroids)
 
     # update centroids
     update_centroids(img, labels, centroids)
 
-print(centroids)
+    print(f'iteration: {i+1}/{iter}')
+    print(f'centroids: {centroids}')
 
-# visualize
-# colors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 1, 1]])
+    # save labels
+    save_path = os.path.join(save_dir, f'iter_{i+1}.png')
+    vis = colors[labels]
+    cv2.imwrite(save_path, vis)

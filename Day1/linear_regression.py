@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 
-degree = 100
+degree = 7
 
 # polynomial regression
 def poly_reg(x, y, degree):
