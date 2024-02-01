@@ -1,3 +1,5 @@
+import cv2
+
 from function import *
 
 def up_scaling(test_img, lin_map):
@@ -18,7 +20,7 @@ def up_scaling(test_img, lin_map):
     cls = []
     for lr_patch in lr_patches:
         # get sub patches
-        sub_patches = get_sub_patches(lr_patch)
+        sub_patches = get_sub_patches(lr_patch)  # 4 x 2 x 2
 
         # Each 2x2 LR sub-patches
         h_gradients = []
@@ -32,31 +34,23 @@ def up_scaling(test_img, lin_map):
         cls.append(compute_class(h_gradients, v_gradients))
 
     # look up corresponding linear mapping by its EO class index C
-    hr_patches = []
-    for lr_patch, cls_idx in zip(lr_patches, cls):
+    hr_patches = np.empty((lr_img.shape[0]*2, lr_img.shape[1]*2))
+    for num, (lr_patch, cls_idx) in enumerate(zip(lr_patches, cls)):
         m = lin_map[cls_idx] if len(lin_map[cls_idx]) > 0 else 0
 
         hr_patch = lr_patch @ m
-        hr_patches.append(hr_patch)
 
-    hr_patches = np.array(hr_patches, dtype=np.uint8)
-    hr_patches = hr_patches.reshape((lr_img.shape[0]*2, lr_img.shape[1]*2))
+        dx = [0, 0, 1, 1]
+        dy = [0, 1, 0, 1]
+        for i in range(4):
+            hr_patches[(num // lr_img.shape[1]) * 2 + dy[i], (num % lr_img.shape[0]) * 2 + dx[i]] = hr_patch[i]
+
+    hr_patches = np.array(hr_patches).astype(np.uint8)
 
     cb = cv2.resize(cb, (cb.shape[0]*2, cb.shape[1]*2), interpolation=cv2.INTER_CUBIC)
     cr = cv2.resize(cr, (cr.shape[0]*2, cr.shape[1]*2), interpolation=cv2.INTER_CUBIC)
 
     merged = cv2.merge([hr_patches, cb, cr])
     merged = cv2.cvtColor(merged, cv2.COLOR_YCrCb2BGR)
-
-    # cv2.imshow('merged', merged)
-    # cv2.imshow('blur_img', blur_img)
-    # cv2.imshow('lr_img', lr_img)
-    # cv2.imshow('cb', cb)
-    # cv2.imshow('cr', cr)
-    # cv2.imshow('test_img', test_img)
-    # cv2.imshow('hr_patches', hr_patches)
-    #
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
 
     return merged

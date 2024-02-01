@@ -8,14 +8,14 @@ def main():
     data_dir = './Data/Training'
     images = os.listdir(data_dir)
     hr_images = []
-    for image in images[:30]:
+    for image in images:
         img = cv2.imread(os.path.join(data_dir, image))
         hr_images.append(img)
 
     lin_map = training(hr_images)
 
     empty = [i for i, arr in enumerate(lin_map) if len(arr) == 0]
-    print(empty)
+    print(f'empty linear mappings indexes: {empty}')
 
     # up-scaling
     test_img = cv2.imread('./Data/Testing/Child_gnd.bmp')
