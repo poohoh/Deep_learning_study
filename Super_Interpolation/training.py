@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 
 from function import *
 
@@ -9,11 +8,12 @@ def training(hr_images):
     lr_cluster = [[] for _ in range(625)]  # n x 9
 
     for num, hr_image in enumerate(hr_images):
+        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2YCrCb)
         hr_img, cb, cr = cv2.split(hr_image)
 
         # Generate LR images L
         blur_img = cv2.blur(hr_img, (3, 3))
-        lr_img = cv2.resize(blur_img, (hr_img.shape[1]//2, hr_img.shape[0]//2))
+        lr_img = cv2.resize(blur_img, (hr_img.shape[1]//2, hr_img.shape[0]//2), interpolation=cv2.INTER_CUBIC)
 
         # Generate 3x3 LR patch y and 2x2 HR patch x pairs
         hr_patches, lr_patches = get_patch_pairs(hr_img, lr_img)
@@ -49,10 +49,12 @@ def training(hr_images):
     for i in range(625):
         # 구하고자 하는 행렬의 크기는 9 x 4
         # M = XY^T(YY^T + lI)^(-1), X: hr, Y: lr
+        # M = (Y^TY + lI)^(-1)Y^TX
         x = np.array(hr_cluster[i])
         y = np.array(lr_cluster[i])
         if len(x) > 0:
             m = np.linalg.inv(y.T @ y + LAMBDA_VALUE * np.eye(y.shape[1])) @ y.T @ x
+            # m = x @ y.T @ np.linalg.inv(y @ y.T + LAMBDA_VALUE * np.eye(y.shape[0]))
         else:
             m = []
         lin_map.append(m)

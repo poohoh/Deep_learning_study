@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 THETA = 15
 LAMBDA_VALUE = 1
@@ -9,17 +10,8 @@ def get_patch_pairs(hr_img, lr_img):
     hr_patches = []
     for i in range(lr_img.shape[0] - 2):  # height
         for j in range(lr_img.shape[1] - 2):  # width
-            lr_patch = []
-            hr_patch = []
-            # LR patch
-            for h in range(3):
-                for w in range(3):
-                    lr_patch.append(lr_img[i + h][j + w])
-
-            # HR patch
-            for h in range(2):
-                for w in range(2):
-                    hr_patch.append(hr_img[(i + 1) * 2 + h][(j + 1) * 2 + w])
+            lr_patch = np.array(lr_img[i:i+3, j:j+3]).reshape(9).tolist()
+            hr_patch = np.array(hr_img[(i+1)*2:(i+1)*2+2, (j+1)*2:(j+1)*2+2]).reshape(4).tolist()
 
             lr_patches.append(np.array(lr_patch))
             hr_patches.append(np.array(hr_patch))
@@ -70,3 +62,12 @@ def compute_class(h_gradients, v_gradients):
     cls = 1*cls_idx[0] + 5*cls_idx[1] + 5**2 * cls_idx[2] + 5**3 * cls_idx[3]
 
     return cls
+
+def get_patches(lr_img):
+    lr_patches = []
+    for i in range(lr_img.shape[0] - 2):  # height
+        for j in range(lr_img.shape[1] - 2):  # width
+            lr_patch = np.array(lr_img[i:i+3, j:j+3]).reshape(9).tolist()
+            lr_patches.append(np.array(lr_patch))
+
+    return np.array(lr_patches)
