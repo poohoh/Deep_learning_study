@@ -12,8 +12,8 @@ def training(hr_images):
         hr_img, cb, cr = cv2.split(hr_image)
 
         # Generate LR images L
-        blur_img = cv2.blur(hr_img, (3, 3))
-        lr_img = cv2.resize(blur_img, (hr_img.shape[1]//2, hr_img.shape[0]//2), interpolation=cv2.INTER_CUBIC)
+        # blur_img = cv2.blur(hr_img, (3, 3))
+        lr_img = cv2.resize(hr_img, (hr_img.shape[1]//2, hr_img.shape[0]//2), interpolation=cv2.INTER_CUBIC)
 
         # Generate 3x3 LR patch y and 2x2 HR patch x pairs
         hr_patches, lr_patches = get_patch_pairs(hr_img, lr_img)

@@ -5,13 +5,14 @@ from function import *
 def up_scaling(test_img, lin_map):
 
     # initialize
-    blur_img = cv2.blur(test_img, (3, 3))
-    lr_img = cv2.resize(blur_img, (test_img.shape[1]//2, test_img.shape[0]//2), interpolation=cv2.INTER_CUBIC)
+    # blur_img = cv2.blur(test_img, (3, 3))
+    lr_img = cv2.resize(test_img, (test_img.shape[1]//2, test_img.shape[0]//2), interpolation=cv2.INTER_CUBIC)
     lr_img = cv2.cvtColor(lr_img, cv2.COLOR_BGR2YCrCb)
     lr_img, cb, cr = cv2.split(lr_img)
 
     # padding
     pad_img = cv2.copyMakeBorder(lr_img, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+
 
     # generate 3x3 LR patches
     lr_patches = get_patches(pad_img)
