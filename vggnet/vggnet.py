@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 VGG_Types = {
@@ -22,13 +21,31 @@ class VGG_16(nn.Module):
             nn.Dropout(),
             nn.Linear(4096, num_classes),
         )
-    #
-    #     # weight initialize
-    #     if init_weights:
-    #         self._initialize_weights()
-    #
-    # def _initialize_weights(self):
-    #
+
+        # weight initialize
+        if init_weights:
+            self._initialize_weights()
+
+    def forward(self, x):
+        x = self.conv_layers(x)
+        x = x.view(-1, 512 * 7 * 7)  # 배치 사이즈를 고려한 -1
+        x = self.fcs(x)
+
+        return x
+
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')  # 가중치를 정규 분포로 초기화
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
 
     def create_layers(self, architecture=VGG_Types['VGG16']):
