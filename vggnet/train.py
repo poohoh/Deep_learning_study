@@ -99,8 +99,8 @@ def get_lr(opt):
 
 def metrics_batch(output, target):
     # get output class
-    # pred = output.argmax(dim=1, keepdim=True)
-    pred = output
+    pred = output.argmax(dim=1)
+    # pred = output
 
     # compare output class with target class
     corrects = pred.eq(target.view_as(pred)).sum().item()
@@ -129,12 +129,12 @@ def loss_epoch(model, criterion, dataset_dl, sanity_check=False, opt=None):
     for xb, yb in tqdm.tqdm(dataset_dl):
         # batch to device
         xb = xb.to(device)
-        yb = yb.float().to(device)
+        yb = yb.to(device)
 
         # five crop: bs, crops, channel, h, w
         bs, c, h, w = xb.size()
-        output_ = model(xb.view(-1, c, h, w))
-        output = output_.view(bs, -1).mean(1)
+        output = model(xb.view(-1, c, h, w))
+        # output = output_.view(bs, -1).mean(1)  # five crop일 때?
 
         # get loss per batch
         loss_b, metric_b = loss_batch(criterion, output, yb, opt)
