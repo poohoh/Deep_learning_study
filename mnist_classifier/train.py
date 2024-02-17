@@ -2,6 +2,8 @@
 
 # 라이브러리
 import os
+import time
+
 import numpy as np
 
 import torch
@@ -19,7 +21,8 @@ num_epoch = 10
 ckpt_dir = './checkpoint'
 log_dir = './log'
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
 ## 네트워크 구축
 class Net(nn.Module):
@@ -105,6 +108,7 @@ optim = torch.optim.Adam(params, lr=lr)
 writer = SummaryWriter(log_dir=log_dir)
 
 ## 트레이닝 시작하기
+start = time.time()
 for epoch in range(1, num_epoch+1):
     net.train()
 
@@ -135,5 +139,10 @@ for epoch in range(1, num_epoch+1):
     writer.add_scalar('acc', np.mean(acc_arr), epoch)
 
     save(ckpt_dir=ckpt_dir, net=net, optim=optim, epoch=epoch)
+
+# print elapsed time
+end = time.time()
+elapsed = end - start
+print(elapsed)
 
 writer.close()
