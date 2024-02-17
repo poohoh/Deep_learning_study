@@ -36,7 +36,7 @@ class Net(nn.Module):
         self.relu2 = nn.ReLU()
 
         self.fc1 = nn.Linear(in_features=320, out_features=50, bias=True)
-        self.relu1_fc1 = nn.ReLU
+        self.relu1_fc1 = nn.ReLU()
         self.drop1_fc1 = nn.Dropout(p=0.5)
 
         self.fc2 = nn.Linear(in_features=50, out_features=10, bias=True)
@@ -67,7 +67,7 @@ def save(ckpt_dir, net, optim, epoch):
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
 
-        torch.save({'net': net.state_dict(), 'optim': optim.state_dict()}, os.path.join(ckpt_dir, f'model_epoch_{epoch}'))
+    torch.save({'net': net.state_dict(), 'optim': optim.state_dict()}, os.path.join(ckpt_dir, f'model_epoch_{epoch}'))
 
 def load(ckpt_dir, net, optim):
     ckpt_lst = os.listdir(ckpt_dir)
@@ -105,9 +105,35 @@ optim = torch.optim.Adam(params, lr=lr)
 writer = SummaryWriter(log_dir=log_dir)
 
 ## 트레이닝 시작하기
-for epoch in num_epoch:
+for epoch in range(1, num_epoch+1):
     net.train()
+
+    loss_arr = []
+    acc_arr = []
 
     for batch, (input, label) in enumerate(loader, 1):
         input = input.to(device)
         label = label.to(device)
+
+        output = net(input)
+        pred = fn_pred(output)
+
+        optim.zero_grad()
+
+        loss = fn_loss(output, label)
+        acc = fn_acc(pred, label)
+
+        loss.backward()
+        optim.step()
+
+        loss_arr += [loss.item()]
+        acc_arr += [acc.item()]
+
+        print(f'TRAIN: EPOCH: {epoch}/{num_epoch}, BATCH: {batch}/{num_batch}, loss: {np.mean(loss_arr)}, acc: {np.mean(acc_arr)}')
+
+    writer.add_scalar('loss', np.mean(loss_arr), epoch)
+    writer.add_scalar('acc', np.mean(acc_arr), epoch)
+
+    save(ckpt_dir=ckpt_dir, net=net, optim=optim, epoch=epoch)
+
+writer.close()
