@@ -1,5 +1,3 @@
-./Day2/result_k_means/
-.idea/
-./mnist_classifier/checkpoint/
-./mnist_classifier/log/
-./mnist_classifier/MNIST/
+mnist_classifier/checkpoint/
+mnist_classifier/MNIST/
+Super_Interpolation/Data/Testing/
