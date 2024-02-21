@@ -3,3 +3,5 @@ mnist_classifier/MNIST/
 Super_Interpolation/Data/Testing/
 .idea/
 .DS_Store
+GAN/data/
+GAN/images/
