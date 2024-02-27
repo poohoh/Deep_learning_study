@@ -22,7 +22,8 @@ ckpt_dir = './checkpoint'
 log_dir = './log'
 
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cuda' if torch.backends.mps.is_available() else 'cpu')
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+print(device)
 
 ## 네트워크 구축
 class Net(nn.Module):
