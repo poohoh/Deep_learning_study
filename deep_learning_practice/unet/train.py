@@ -1,5 +1,7 @@
 ## 라이브러리
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 import torch
@@ -152,38 +154,38 @@ class UNet(nn.Module):
 
         x = self.fc(dec1_1)
 
-        print(f'input: {x.shape}')
-        print(f'enc1_1: {enc1_1.shape}')
-        print(f'enc1_2: {enc1_2.shape}')
-        print(f'pool1: {pool1.shape}')
-        print(f'enc2_1: {enc2_1.shape}')
-        print(f'enc2_2: {enc2_2.shape}')
-        print(f'pool2: {pool2.shape}')
-        print(f'enc3_1: {enc3_1.shape}')
-        print(f'enc3_2: {enc3_2.shape}')
-        print(f'pool3: {pool3.shape}')
-        print(f'enc4_1: {enc4_1.shape}')
-        print(f'enc4_2: {enc4_2.shape}')
-        print(f'pool4: {pool4.shape}')
-        print(f'enc5_1: {enc5_1.shape}')
-        print(f'dec5_1: {dec5_1.shape}')
-        print(f'unpool4: {unpool4.shape}')
-        print(f'cat4: {cat4.shape}')
-        print(f'dec4_2: {dec4_2.shape}')
-        print(f'dec4_1: {dec4_1.shape}')
-        print(f'unpool3: {unpool3.shape}')
-        print(f'cat3: {cat3.shape}')
-        print(f'dec3_2: {dec3_2.shape}')
-        print(f'dec3_1: {dec3_1.shape}')
-        print(f'unpool2: {unpool2.shape}')
-        print(f'cat2: {cat2.shape}')
-        print(f'dec2_2: {dec2_2.shape}')
-        print(f'dec2_1: {dec4_1.shape}')
-        print(f'unpool1: {unpool1.shape}')
-        print(f'cat1: {cat1.shape}')
-        print(f'dec1_2: {dec1_2.shape}')
-        print(f'dec1_1: {dec1_1.shape}')
-        print(f'result: {x.shape}')
+        # print(f'input: {x.shape}')
+        # print(f'enc1_1: {enc1_1.shape}')
+        # print(f'enc1_2: {enc1_2.shape}')
+        # print(f'pool1: {pool1.shape}')
+        # print(f'enc2_1: {enc2_1.shape}')
+        # print(f'enc2_2: {enc2_2.shape}')
+        # print(f'pool2: {pool2.shape}')
+        # print(f'enc3_1: {enc3_1.shape}')
+        # print(f'enc3_2: {enc3_2.shape}')
+        # print(f'pool3: {pool3.shape}')
+        # print(f'enc4_1: {enc4_1.shape}')
+        # print(f'enc4_2: {enc4_2.shape}')
+        # print(f'pool4: {pool4.shape}')
+        # print(f'enc5_1: {enc5_1.shape}')
+        # print(f'dec5_1: {dec5_1.shape}')
+        # print(f'unpool4: {unpool4.shape}')
+        # print(f'cat4: {cat4.shape}')
+        # print(f'dec4_2: {dec4_2.shape}')
+        # print(f'dec4_1: {dec4_1.shape}')
+        # print(f'unpool3: {unpool3.shape}')
+        # print(f'cat3: {cat3.shape}')
+        # print(f'dec3_2: {dec3_2.shape}')
+        # print(f'dec3_1: {dec3_1.shape}')
+        # print(f'unpool2: {unpool2.shape}')
+        # print(f'cat2: {cat2.shape}')
+        # print(f'dec2_2: {dec2_2.shape}')
+        # print(f'dec2_1: {dec4_1.shape}')
+        # print(f'unpool1: {unpool1.shape}')
+        # print(f'cat1: {cat1.shape}')
+        # print(f'dec1_2: {dec1_2.shape}')
+        # print(f'dec1_1: {dec1_1.shape}')
+        # print(f'result: {x.shape}')
 
         return x
 
@@ -191,3 +193,108 @@ net = UNet()
 rand = torch.rand((1, 1, 572, 572))
 
 result = net(rand)
+
+
+# 데이터 로더 구현
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, data_dir, transform=None):
+        self.data_dir = data_dir
+        self.transform = transform
+
+        lst_data = os.listdir(self.data_dir)
+
+        lst_label = [f for f in lst_data if f.startswith('label')]
+        lst_input = [f for f in lst_data if f.startswith('input')]
+
+        lst_label.sort()
+        lst_input.sort()
+
+        self.lst_label = lst_label
+        self.lst_input = lst_input
+
+    def __len__(self):
+        return len(self.lst_label)
+
+    def __getitem__(self, index):
+        label = np.load(os.path.join(self.data_dir, self.lst_label[index]))
+        input = np.load(os.path.join(self.data_dir, self.lst_input[index]))
+
+        label = label/255.0
+        input = input/255.0
+
+        if label.ndim == 2:
+            label = label[:, :, np.newaxis]
+        if input.ndim == 2:
+            input = input[:, :, np.newaxis]
+
+        data = {'input': input, 'label':label}
+
+        if self.transform:
+            data = self.transform(data)
+
+        return data
+
+## Transform 구현하기
+class ToTensor(object):
+    def __call__(self, data):
+        label, input = data['label'], data['input'],
+
+        label = label.transpose((2, 0, 1)).astype(np.float32)  # numpy: HWC, torch tensor: CHW
+        input = input.transpose((2, 0, 1)).astype(np.float32)
+
+        data = {'label': torch.from_numpy(label), 'input': torch.from_numpy(input)}
+
+        return data
+
+class Normalization(object):
+    def __init__(self, mean=0.5, std=0.5):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, data):
+        label, input = data['label'], data['input'],
+
+        input = (input - self.mean) / self.std
+
+        data = {'label': label, 'input': input}
+
+        return data
+
+class RandomFlip(object):
+    def __call__(self, data):
+        label, input = data['label'], data['input'],
+
+        if np.random.rand() > 0.5:
+            label = np.fliplr(label)  # flip left right
+            input = np.fliplr(input)
+
+        if np.random.rand() > 0.5:
+            label = np.flipud(label)  # flip up down
+            input = np.flipud(input)
+
+        data = {'label': label, 'input': input}
+
+        return data
+
+##
+transform = transforms.Compose([
+    Normalization(mean=0.5, std=0.5),
+    RandomFlip(),
+    ToTensor(),
+])
+dataset_train = Dataset(data_dir=os.path.join(data_dir, 'train'), transform=transform)
+
+##
+data = dataset_train.__getitem__(0)
+
+input = data['input']
+label = data['label']
+
+##
+plt.subplot(121)
+plt.imshow(input.squeeze())
+
+plt.subplot(122)
+plt.imshow(label.squeeze())
+
+plt.show()
