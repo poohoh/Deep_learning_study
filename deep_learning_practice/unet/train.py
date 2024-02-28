@@ -4,8 +4,10 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torchvision.transforms
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+import torch.nn.functional as F
 
 from torchvision import transforms, datasets
 
@@ -19,6 +21,24 @@ ckpt_dir = "./checkpoint"
 log_dir = "./log"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
+
+def concat(unpool, enc):
+    # 1. unpool feature를 padding하는 방법
+    # diffY = enc.size()[2] - unpool.size()[2]
+    # diffX = enc.size()[3] - unpool.size()[3]
+    #
+    # unpool = F.pad(unpool, [diffY//2, diffY - diffY//2,
+    #                             diffX//2, diffX - diffX//2])
+    
+    # 2. enc feature를 crop하는 방법
+    print(enc.shape)
+    enc = torchvision.transforms.CenterCrop(size=unpool.shape[2:])(enc)
+    print(enc.shape)
+
+    result = torch.cat([unpool, enc], dim=1)  # dim - 0: batch, 1: channel, 2: height, 3: width
+
+    return result
 
 ## 네트워크 구축하기
 class UNet(nn.Module):
@@ -80,15 +100,18 @@ class UNet(nn.Module):
         self.dec2_2 = CBR2d(in_channels=2 * 128, out_channels=128)
         self.dec2_1 = CBR2d(in_channels=128, out_channels=128)
 
-        self.unpool1 = nn.ConvTranspose2d(in_channels=128, out_channels=64)
+        self.unpool1 = nn.ConvTranspose2d(in_channels=128, out_channels=64,
+                                          kernel_size=2, stride=2, padding=0, bias=True)
 
         self.dec1_2 = CBR2d(in_channels=2 * 64, out_channels=64)
         self.dec1_1 = CBR2d(in_channels=64, out_channels=64)
         self.fc = CBR2d(in_channels=64, out_channels=2, kernel_size=1, padding=0, bias=True)
 
     def forward(self, x):
+
         enc1_1 = self.enc1_1(x)
         enc1_2 = self.enc1_2(enc1_1)
+
         pool1 = self.pool1(enc1_2)
 
         enc2_1 = self.enc2_1(pool1)
@@ -108,25 +131,63 @@ class UNet(nn.Module):
         dec5_1 = self.dec5_1(enc5_1)
 
         unpool4 = self.unpool4(dec5_1)
-        cat4 = torch.cat((enc4_2, unpool4), dim=1)  # dim - 0: batch, 1: channel, 2: height, 3: width
+        cat4 = concat(unpool4, enc4_2)
         dec4_2 = self.dec4_2(cat4)
         dec4_1 = self.dec4_1(dec4_2)
 
         unpool3 = self.unpool3(dec4_1)
-        cat3 = torch.cat((enc3_2, unpool3), dim=1)
+        cat3 = concat(unpool3, enc3_2)
         dec3_2 = self.dec3_2(cat3)
         dec3_1 = self.dec3_1(dec3_2)
 
         unpool2 = self.unpool2(dec3_1)
-        cat2 = torch.cat((enc2_2, unpool2), dim=1)
+        cat2 = concat(unpool2, enc2_2)
         dec2_2 = self.dec2_2(cat2)
         dec2_1 = self.dec2_1(dec2_2)
 
         unpool1 = self.unpool1(dec2_1)
-        cat1 = torch.cat((enc1_2, unpool1), dim=1)
+        cat1 = concat(unpool1, enc1_2)
         dec1_2 = self.dec1_2(cat1)
         dec1_1 = self.dec1_1(dec1_2)
 
         x = self.fc(dec1_1)
 
+        print(f'input: {x.shape}')
+        print(f'enc1_1: {enc1_1.shape}')
+        print(f'enc1_2: {enc1_2.shape}')
+        print(f'pool1: {pool1.shape}')
+        print(f'enc2_1: {enc2_1.shape}')
+        print(f'enc2_2: {enc2_2.shape}')
+        print(f'pool2: {pool2.shape}')
+        print(f'enc3_1: {enc3_1.shape}')
+        print(f'enc3_2: {enc3_2.shape}')
+        print(f'pool3: {pool3.shape}')
+        print(f'enc4_1: {enc4_1.shape}')
+        print(f'enc4_2: {enc4_2.shape}')
+        print(f'pool4: {pool4.shape}')
+        print(f'enc5_1: {enc5_1.shape}')
+        print(f'dec5_1: {dec5_1.shape}')
+        print(f'unpool4: {unpool4.shape}')
+        print(f'cat4: {cat4.shape}')
+        print(f'dec4_2: {dec4_2.shape}')
+        print(f'dec4_1: {dec4_1.shape}')
+        print(f'unpool3: {unpool3.shape}')
+        print(f'cat3: {cat3.shape}')
+        print(f'dec3_2: {dec3_2.shape}')
+        print(f'dec3_1: {dec3_1.shape}')
+        print(f'unpool2: {unpool2.shape}')
+        print(f'cat2: {cat2.shape}')
+        print(f'dec2_2: {dec2_2.shape}')
+        print(f'dec2_1: {dec4_1.shape}')
+        print(f'unpool1: {unpool1.shape}')
+        print(f'cat1: {cat1.shape}')
+        print(f'dec1_2: {dec1_2.shape}')
+        print(f'dec1_1: {dec1_1.shape}')
+        print(f'result: {x.shape}')
+
         return x
+
+net = UNet()
+rand = torch.rand((1, 1, 572, 572))
+
+result = net(rand)
